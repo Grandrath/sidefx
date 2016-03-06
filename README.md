@@ -267,7 +267,7 @@ As stated above there is no code to play around with yet, sorry. If you like to 
 
 ## Credits
 
-TODO
+SideFX is heavily inspired by the Python library [effect](https://github.com/python-effect/effect). Kudos to its author [Christopher Armstrong](https://github.com/radix).
 
 ## License
 
