@@ -4,38 +4,18 @@
 
 ## Introduction
 
-Side-effects suck. The primary source of complexity in our programs is side-effects. The (almost) only reason for having to deal with asynchronous code is side-effects. Code becomes ~~impossible~~ hard to test because of side-effects. And yet we need them. Without side-effects our programs can't do anything remotely useful.
+Side-effects are the primary source of complexity in our programs. They are (almost) the only reason for having to deal with asynchronous code. And they make our code hard to test. Separating side-effects from application logic is a primary goal of software architecture.
 
-Have a look at these two functions:
+But how can we achieve that?
 
-```javascript
-function greet(subject) {
-  return `Hello, ${subject}!`
-}
-
-function getJson(url) {
-  return fetch(url).then(response => response.json());
-}
-```
-
-The `greet` function is a breeze to test. Simply call it with certain input values and make assertions about the corresponding return values. You can easily specify how it should behave when passing `""`, `null` or an object. Should it throw an error, fall back to a default value or something else? Your call.
-
-`getJson` is trickier. You basically have two choices: replace the global `fetch` function with a test double (and make sure to restore it once your test is done!) or spin up a server that serves specific test data you can then assert against. Both are a lot of work and both are error-prone. Which might make you decide not to test this code.
-
-But there is a catch. Side-effects are like a virus. Every code they touch becomes a side-effect itself. So does the caller of `getJson`. And its caller.
-
-If you ever struggled with this problem, you have certainly heard of _dependency injection_. In this example: simply pass `fetch` as a parameter into `getJson`. This makes it 	noticeable easier to replace it with a double implementation without having to manipulate the global object. The downside of this approach is that now the caller of `getJson` also has a dependency on `fetch`. Do you start to pass around all kinds of side-effects everywhere?
-
-I know, DI frameworks exist. But none of those solves this problem (YMMV). Without going into too much detail here, the main problems with DI frameworks are that they require you to register every single piece of code at a single location and to sprinkle dependencies to the framework-of-choice all over your code. I like to write my apps in lots of tiny reusable modules, so I'm not at all excited about that.
-
-A while ago I watched [a talk](https://www.youtube.com/watch?v=D37dc9EoFus) about the Python library [effect](https://github.com/python-effect/effect) which blew my mind. And recently I thought, it has to be possible to write something similar in JavaScript. So here we are.
+A while ago I watched [a talk](https://www.youtube.com/watch?v=D37dc9EoFus) about the Python library [effect](https://github.com/python-effect/effect) which blew my mind. And only recently I thought, it has to be possible to implement these ideas in JavaScript. So here we are.
 
 ## Goals
 
-* Reduce dependencies to `sidefx` to a minimum.
-* Make your application logic completely free of side-effects.
-* Make it easy to swap out implementations in different environments (development, tests, server, browser, &hellip;)
+* Free your application logic completely from side-effects.
 * Make your code easier to test.
+* Make it easy to swap out implementations in different environments (development, tests, server, browser, &hellip;)
+* Reduce dependencies to `sidefx` to a minimum.
 
 ## Getting started with SideFX
 
@@ -58,7 +38,7 @@ const LogMessage = Effect(function (message) {
 
 ### Performers
 
-To actually perform the side-effect we need a _performer_. A performer is a simple function that takes two arguments: the _context_, which will contain low-level side-effect causing APIs, and an instance of our effect type.
+To actually perform the side-effect we need a _performer_. A performer is a simple function that takes two arguments: the _context_ which will contain low-level side-effect causing APIs, and an instance of our effect type.
 
 Let's define a performer that logs messages to the `console`:
 
