@@ -4,7 +4,10 @@
   "description": "Sane side-effects",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers js:babel-core/register --require build/test_init.js src",
+    "test:watch": "mocha --compilers js:babel-core/register --require build/test_init.js --reporter min --watch src",
+    "build": "babel src/ --out-dir lib/ --ignore '_*_test.js'",
+    "prepublish": "npm test && npm run build"
   },
   "repository": {
     "type": "git",
