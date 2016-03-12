@@ -9,7 +9,7 @@ describe("TypeDispatcher", function () {
 
     beforeEach(function () {
       MyType = Effect();
-      myPerformer = function myPerformer() {};
+      myPerformer = function myPerformerFn() {};
 
       dispatcher = TypeDispatcher([
         [MyType, myPerformer]
