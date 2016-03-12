@@ -78,14 +78,15 @@ const dispatcher = TypeDispatcher([
 
 The `TypeDispatcher` factory takes a mapping from type to performer in the form of an array of `[Type, performer]` pairs.
 
-Now we can use the dispatcher's `perform` method:
+Now we can use the `perform` function:
 
 ```javascript
+const perform = sidefx.perform;
 const context = {
   console: console
 };
 const logMessage_2 = LogMessage("Hello, dispatcher!");
-dispatcher.perform(context, logMessage_2);
+perform(context, dispatcher, logMessage_2);
 // => "Hello, dispatcher!"
 ```
 
@@ -102,7 +103,7 @@ function* app() {
   yield LogMessage("Hello, App!");
 }
 
-dispatcher.perform(context, app());
+perform(context, app());
 // => "Hello, App!"
 ```
 
@@ -236,7 +237,7 @@ const dispatcher = TypeDispatcher([
   [LogMessage, performLogMessage]
 ]);
 
-dispatcher.perform(context, app());
+perform(context, dispatcher, app());
 ```
 
 And there you have it. Our entry point `index.js` is only responsible for wiring things up and our application logic has no dependencies to any side-effect code.
