@@ -6,20 +6,14 @@ function performEffect(context, dispatcher, effect, callback) {
   const performer = dispatcher.getPerformer(effect);
   if (typeof performer !== "function") {
     const type = Effect.getType(effect);
-    callback(new Error(`No performer for "${type.name}" could be found`));
-    return;
+    throw new Error(`No performer for "${type.name}" could be found`);
   }
 
   if (expectsCallback(performer)) {
     performer(context, effect, callback);
   }
   else {
-    try {
-      callback(null, performer(context, effect));
-    }
-    catch (error) {
-      callback(error);
-    }
+    callback(null, performer(context, effect));
   }
 }
 
