@@ -230,6 +230,76 @@ describe("perform", function () {
     });
   });
 
+  describe("generator performers", function () {
+    it("should be iterated over recursively", function () {
+      const InnerType = Effect("InnerType");
+
+      function* performMyType(ctx, myType) { // eslint-disable-line no-unused-vars
+        const result = yield InnerType();
+        return result;
+      }
+
+      function performInnerType(ctx, innerType) { // eslint-disable-line no-unused-vars
+        return "expected result";
+      }
+
+      const generator = function* generator() {
+        const result = yield MyType();
+        return result;
+      };
+
+      const dispatcher = TypeDispatcher([
+        [MyType, performMyType],
+        [InnerType, performInnerType]
+      ]);
+
+      return expect(perform({}, dispatcher, generator()))
+        .to.eventually.equal("expected result");
+    });
+  });
+
+  describe("overall test", function () {
+    it("should pass", function () {
+      const AsyncType = Effect("AsyncType", function (value) {
+        this.value = value;
+      });
+
+      const ThrowingType = Effect("ThrowingType", function (message) {
+        this.message = message;
+      });
+
+      function performAsyncType(ctx, asyncType, callback) {
+        ctx.doAsync(() => callback(null, asyncType.value));
+      }
+
+      function performThrowingType(ctx, throwingType) {
+        return Promise.reject(new Error(throwingType.message));
+      }
+
+      const _context = {
+        doAsync: (f) => setTimeout(f, 0)
+      };
+
+      const dispatcher = TypeDispatcher([
+        [AsyncType, performAsyncType],
+        [ThrowingType, performThrowingType]
+      ]);
+
+      const generator = function* generator() {
+        const first = yield AsyncType("expected");
+        try {
+          yield ThrowingType("result");
+        }
+        catch (error) {
+          return `${first} ${error.message}`;
+        }
+      };
+
+      return expect(perform(_context, dispatcher, generator()))
+        .to.eventually.equal("expected result");
+    });
+  });
+
   it("should reject returned promise when no performer could be found", function () {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
