@@ -2,6 +2,8 @@ import Effect from "./effect.js";
 
 const expectsCallback = performer => performer.length >= 3;
 const isEffect = Effect.isEffect;
+const isIterator = value => value && typeof value.next === "function";
+const isDone = request => request && request.done;
 
 function handle(onSuccess, onError) {
   return function (error, result) {
@@ -12,6 +14,19 @@ function handle(onSuccess, onError) {
       onSuccess(result);
     }
   };
+}
+
+function iterate(iter, context, dispatcher, callback, result, error) {
+  const request = iter.next(result);
+
+  if (isDone(request)) {
+    resolveValue(context, dispatcher, request.value, callback);
+  }
+  else {
+    resolveValue(context, dispatcher, request.value, function (err, value) {
+      iterate(iter, context, dispatcher, callback, value, err);
+    });
+  }
 }
 
 function performEffect(context, dispatcher, effect, callback) {
@@ -34,7 +49,10 @@ function performEffect(context, dispatcher, effect, callback) {
 }
 
 function resolveValue(context, dispatcher, unresolvedValue, callback) {
-  if (isEffect(unresolvedValue)) {
+  if (isIterator(unresolvedValue)) {
+    iterate(unresolvedValue, context, dispatcher, callback);
+  }
+  else if (isEffect(unresolvedValue)) {
     performEffect(context, dispatcher, unresolvedValue, callback);
   }
   else {
@@ -44,6 +62,6 @@ function resolveValue(context, dispatcher, unresolvedValue, callback) {
 
 export default function perform(context, dispatcher, effect) {
   return new Promise(function (resolve, reject) {
-    performEffect(context, dispatcher, effect, handle(resolve, reject));
+    resolveValue(context, dispatcher, effect, handle(resolve, reject));
   });
 }

@@ -230,6 +230,32 @@ describe("perform", function () {
     });
   });
 
+  describe("a generator that yield multiple effects", function () {
+    it("should perform each effect", function (done) {
+      const generator = function* generator() {
+        const first = yield MyType("expected");
+        const second = yield MyType("result");
+
+        return `${first} ${second}`;
+      };
+
+      function performMyType(ctx, myType) {
+        return myType.value;
+      }
+
+      const dispatcher = TypeDispatcher([
+        [MyType, performMyType]
+      ]);
+
+      perform({}, dispatcher, generator())
+        .then(function (result) {
+          expect(result).to.equal("expected result");
+        })
+        .then(done)
+        .catch(done);
+    });
+  });
+
   it("should reject returned promise when no performer could be found", function (done) {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
