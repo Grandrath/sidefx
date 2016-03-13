@@ -178,12 +178,18 @@ describe("perform", function () {
     });
   });
 
-  it("should throw when no performer could be found", function () {
+  it("should reject returned promise when no performer could be found", function (done) {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
 
-    expect(function () {
-      perform({}, dispatcher, effect);
-    }).to.throw("No performer for \"MyType\" could be found");
+    perform({}, dispatcher, effect)
+      .then(function (result) {
+        throw new Error(`Expected promise to be rejected but got "${result}"`);
+      })
+      .catch(function (error) {
+        expect(error).to.have.property("message", "No performer for \"MyType\" could be found");
+      })
+      .then(done)
+      .catch(done);
   });
 });
