@@ -17,7 +17,9 @@ function handle(onSuccess, onError) {
 }
 
 function iterate(iter, context, dispatcher, callback, result, error) {
-  const request = iter.next(result);
+  const request = error
+    ? iter.throw(error)
+    : iter.next(result);
 
   if (isDone(request)) {
     resolveValue(context, dispatcher, request.value, callback);
@@ -53,7 +55,12 @@ function resolveValue(context, dispatcher, unresolvedValue, callback) {
     iterate(unresolvedValue, context, dispatcher, callback);
   }
   else if (isEffect(unresolvedValue)) {
-    performEffect(context, dispatcher, unresolvedValue, callback);
+    try {
+      performEffect(context, dispatcher, unresolvedValue, callback);
+    }
+    catch (error) {
+      callback(error);
+    }
   }
   else {
     callback(null, unresolvedValue);

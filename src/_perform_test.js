@@ -202,6 +202,32 @@ describe("perform", function () {
       return expect(perform({}, dispatcher, generator()))
         .to.eventually.equal("expected result");
     });
+
+    it("should throw the performer's error within the generator", function () {
+      const generator = function* generator() {
+        try {
+          yield ThrowingType("expected result");
+        }
+        catch (error) {
+          return error.message;
+        }
+      };
+
+      const ThrowingType = Effect("ThrowingType", function (message) {
+        this.message = message;
+      });
+
+      function performThrowingType(ctx, throwingType) {
+        throw new Error(throwingType.message);
+      }
+
+      const dispatcher = TypeDispatcher([
+        [ThrowingType, performThrowingType]
+      ]);
+
+      return expect(perform({}, dispatcher, generator()))
+        .to.eventually.equal("expected result");
+    });
   });
 
   it("should reject returned promise when no performer could be found", function () {
