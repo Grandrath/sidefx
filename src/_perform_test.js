@@ -37,35 +37,24 @@ describe("perform", function () {
       throw new Error("expected error");
     }
 
-    it("should resolve the returned promise with the result", function (done) {
+    it("should resolve the returned promise with the result", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkSyncPerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.eventually.equal("expected result");
     });
 
-    it("should reject the returned promise when performer throws an error", function (done) {
+    it("should reject the returned promise when performer throws an error", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkFailingSyncPerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          throw new Error(`Expected promise to be rejected but got "${result}"`);
-        })
-        .catch(function (error) {
-          expect(error).to.have.property("message", "expected error");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.be.rejectedWith("expected error");
     });
   });
 
@@ -85,52 +74,34 @@ describe("perform", function () {
       throw new Error("expected error");
     }
 
-    it("should resolve the returned promise with the result", function (done) {
+    it("should resolve the returned promise with the result", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkCallbackPerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.eventually.equal("expected result");
     });
 
-    it("should reject the returned promise when performer calls back with an error", function (done) {
+    it("should reject the returned promise when performer calls back with an error", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkFailingCallbackPerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          throw new Error(`Expected promise to be rejected but got "${result}"`);
-        })
-        .catch(function (error) {
-          expect(error).to.have.property("message", "expected error");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.be.rejectedWith("expected error");
     });
 
-    it("should reject the returned promise when performer throws an error", function (done) {
+    it("should reject the returned promise when performer throws an error", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkThrowingCallbackPerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          throw new Error(`Expected promise to be rejected but got "${result}"`);
-        })
-        .catch(function (error) {
-          expect(error).to.have.property("message", "expected error");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.be.rejectedWith("expected error");
     });
   });
 
@@ -146,40 +117,29 @@ describe("perform", function () {
       return Promise.reject(new Error("expected error"));
     }
 
-    it("should resolve the returned promise with the result", function (done) {
+    it("should resolve the returned promise with the result", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkPromisePerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.eventually.equal("expected result");
     });
 
-    it("should reject the returned promise when performer returns an error", function (done) {
+    it("should reject the returned promise when performer returns an error", function () {
       const dispatcher = TypeDispatcher([
         [MyType, checkFailingPromisePerformer]
       ]);
       const effect = MyType();
 
-      perform(context, dispatcher, effect)
-        .then(function (result) {
-          throw new Error(`Expected promise to be rejected but got "${result}"`);
-        })
-        .catch(function (error) {
-          expect(error).to.have.property("message", "expected error");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform(context, dispatcher, effect))
+        .to.be.rejectedWith("expected error");
     });
   });
 
   describe("performer returns an effect", function () {
-    it("should perform the returned effect (sync performer)", function (done) {
+    it("should perform the returned effect (sync performer)", function () {
       const InnerType = Effect("InnerType");
 
       function performMyType() {
@@ -196,15 +156,11 @@ describe("perform", function () {
       ]);
       const outerEffect = MyType();
 
-      perform({}, dispatcher, outerEffect)
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform({}, dispatcher, outerEffect))
+        .to.eventually.equal("expected result");
     });
 
-    it("should perform the returned effect (callback performer)", function (done) {
+    it("should perform the returned effect (callback performer)", function () {
       const InnerType = Effect("InnerType");
 
       function performMyType(ctx, effect, callback) {
@@ -221,17 +177,13 @@ describe("perform", function () {
       ]);
       const outerEffect = MyType();
 
-      perform({}, dispatcher, outerEffect)
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform({}, dispatcher, outerEffect))
+        .to.eventually.equal("expected result");
     });
   });
 
   describe("a generator that yield multiple effects", function () {
-    it("should perform each effect", function (done) {
+    it("should perform each effect", function () {
       const generator = function* generator() {
         const first = yield MyType("expected");
         const second = yield MyType("result");
@@ -247,27 +199,16 @@ describe("perform", function () {
         [MyType, performMyType]
       ]);
 
-      perform({}, dispatcher, generator())
-        .then(function (result) {
-          expect(result).to.equal("expected result");
-        })
-        .then(done)
-        .catch(done);
+      return expect(perform({}, dispatcher, generator()))
+        .to.eventually.equal("expected result");
     });
   });
 
-  it("should reject returned promise when no performer could be found", function (done) {
+  it("should reject returned promise when no performer could be found", function () {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
 
-    perform({}, dispatcher, effect)
-      .then(function (result) {
-        throw new Error(`Expected promise to be rejected but got "${result}"`);
-      })
-      .catch(function (error) {
-        expect(error).to.have.property("message", "No performer for \"MyType\" could be found");
-      })
-      .then(done)
-      .catch(done);
+    return expect(perform({}, dispatcher, effect))
+      .to.be.rejectedWith("No performer for \"MyType\" could be found");
   });
 });
