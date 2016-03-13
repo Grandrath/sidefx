@@ -16,59 +16,57 @@ function handle(onSuccess, onError) {
   };
 }
 
-function iterate(iter, context, dispatcher, callback, result, error) {
-  const request = error
-    ? iter.throw(error)
-    : iter.next(result);
-
-  if (isDone(request)) {
-    resolveValue(context, dispatcher, request.value, callback);
-  }
-  else {
-    resolveValue(context, dispatcher, request.value, function (err, value) {
-      iterate(iter, context, dispatcher, callback, value, err);
-    });
-  }
-}
-
-function performEffect(context, dispatcher, effect, callback) {
-  const performer = dispatcher.getPerformer(effect);
-  if (typeof performer !== "function") {
-    const type = Effect.getType(effect);
-    throw new Error(`No performer for "${type.name}" could be found`);
-  }
-
-  if (expectsCallback(performer)) {
-    performer(context, effect, handle(
-      result => resolveValue(context, dispatcher, result, callback),
-      error => callback(error)
-    ));
-  }
-  else {
-    const result = performer(context, effect);
-    resolveValue(context, dispatcher, result, callback);
-  }
-}
-
-function resolveValue(context, dispatcher, unresolvedValue, callback) {
-  if (isIterator(unresolvedValue)) {
-    iterate(unresolvedValue, context, dispatcher, callback);
-  }
-  else if (isEffect(unresolvedValue)) {
-    try {
-      performEffect(context, dispatcher, unresolvedValue, callback);
-    }
-    catch (error) {
-      callback(error);
-    }
-  }
-  else {
-    callback(null, unresolvedValue);
-  }
-}
-
 export default function perform(context, dispatcher, effect) {
-  return new Promise(function (resolve, reject) {
-    resolveValue(context, dispatcher, effect, handle(resolve, reject));
-  });
+  function iterate(iter, callback, error, result) {
+    const request = error
+      ? iter.throw(error)
+      : iter.next(result);
+
+    if (isDone(request)) {
+      resolveValue(request.value, callback);
+    }
+    else {
+      resolveValue(request.value, function (_error, _result) {
+        iterate(iter, callback, _error, _result);
+      });
+    }
+  }
+
+  function performEffect(effectInstance, callback) {
+    const performer = dispatcher.getPerformer(effectInstance);
+    if (typeof performer !== "function") {
+      const type = Effect.getType(effectInstance);
+      throw new Error(`No performer for "${type.name}" could be found`);
+    }
+
+    if (expectsCallback(performer)) {
+      performer(context, effectInstance, handle(
+        result => resolveValue(result, callback),
+        error => callback(error)
+      ));
+    }
+    else {
+      const result = performer(context, effectInstance);
+      resolveValue(result, callback);
+    }
+  }
+
+  function resolveValue(value, callback) {
+    if (isIterator(value)) {
+      iterate(value, callback);
+    }
+    else if (isEffect(value)) {
+      try {
+        performEffect(value, callback);
+      }
+      catch (error) {
+        callback(error);
+      }
+    }
+    else {
+      callback(null, value);
+    }
+  }
+
+  return new Promise((resolve, reject) => resolveValue(effect, handle(resolve, reject)));
 }
