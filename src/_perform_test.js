@@ -178,6 +178,58 @@ describe("perform", function () {
     });
   });
 
+  describe("performer returns an effect", function () {
+    it("should perform the returned effect (sync performer)", function (done) {
+      const InnerType = Effect("InnerType");
+
+      function performMyType() {
+        return InnerType();
+      }
+
+      function performInnerType() {
+        return "expected result";
+      }
+
+      const dispatcher = TypeDispatcher([
+        [MyType, performMyType],
+        [InnerType, performInnerType]
+      ]);
+      const outerEffect = MyType();
+
+      perform({}, dispatcher, outerEffect)
+        .then(function (result) {
+          expect(result).to.equal("expected result");
+        })
+        .then(done)
+        .catch(done);
+    });
+
+    it("should perform the returned effect (callback performer)", function (done) {
+      const InnerType = Effect("InnerType");
+
+      function performMyType(ctx, effect, callback) {
+        setTimeout(() => callback(null, InnerType()), 0);
+      }
+
+      function performInnerType(ctx, effect, callback) {
+        setTimeout(() => callback(null, "expected result"), 0);
+      }
+
+      const dispatcher = TypeDispatcher([
+        [MyType, performMyType],
+        [InnerType, performInnerType]
+      ]);
+      const outerEffect = MyType();
+
+      perform({}, dispatcher, outerEffect)
+        .then(function (result) {
+          expect(result).to.equal("expected result");
+        })
+        .then(done)
+        .catch(done);
+    });
+  });
+
   it("should reject returned promise when no performer could be found", function (done) {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
