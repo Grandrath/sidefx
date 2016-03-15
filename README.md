@@ -21,7 +21,7 @@ A while ago I watched [a talk](https://www.youtube.com/watch?v=D37dc9EoFus) abou
 
 ### Effect types
 
-The first thing we need is an _effect type_ for each side-effect we like to perform. Effect types are defined using the `Effect` function that takes a constructor / initialize function as argument.
+The first thing we need is an _effect type_ for each side-effect we like to perform. Effect types are defined using the `Effect` function that takes an optional name and an optional constructor / initialize function as arguments.
 
 Here we create an effect type for logging messages:
 
@@ -29,34 +29,32 @@ Here we create an effect type for logging messages:
 const sidefx = require("sidefx");
 const Effect = sidefx.Effect;
 
-const LogMessage = Effect(function (message) {
+const LogMessage = Effect("LogMessage", function (message) {
   this.message = message;  
 });
 ```
 
-`LogMessage` is now a factory function that takes a message and returns instances of our LogMessage effect type. These instances are plain objects that don't carry any behavior - just the data that _describes_ the effect that needs to be performed.
+`LogMessage` is a factory function that takes a message string and returns instances of our LogMessage effect type. These instances are plain objects that don't carry any behavior - just the data that _describes_ the effect that needs to be performed.
 
 ### Performers
 
-To actually perform the side-effect we need a _performer_. A performer is a simple function that takes two arguments: the _context_ which will contain low-level side-effect causing APIs, and an instance of our effect type.
+To actually perform the side-effect we need a _performer_. A performer is a simple function that takes two arguments: an instance of our effect type and an optional NodeJS-style callback for asynchronous operations.
 
 Let's define a performer that logs messages to the `console`:
 
 ```javascript
-function performLogMessage(context, logMessage) {
-  context.console.log(logMessage.message);
+function performLogMessage(logMessage) {
+  console.log(logMessage.message);
 }
 ```
 
 Notice that there is no magic going on here. The performer's name does not matter and can be anything you like and the `logMessage` argument is a return value of our `LogMessage` type we defined above.
 
-You might be wondering why we pass in an object with a `console` property although `console` is a global. We come back to this one. (Spoiler: it enables us to test the performer function and swap out implementations)
-
 Performing the side-effect manually would work like this:
 
 ```javascript
 const logMessage_1 = LogMessage("Hello, side-effect!");
-performLogMessage(global, logMessage_1);
+performLogMessage(logMessage_1);
 // => "Hello, side-effect!"
 ```
 
@@ -64,7 +62,7 @@ This works but is not terribly useful. We have yet to separate our code that _wa
 
 ### Dispatchers
 
-A _dispatcher_ does exactly that. It takes an effect type instance, looks up a performer for this effect and calls the performer with the effect.
+A _dispatcher_ does exactly that. It takes an effect type instance and looks up a performer for this effect.
 
 To be able to look up performers based on the type of effect we need a `TypeDispatcher`:
 
@@ -82,11 +80,8 @@ Now we can use the `perform` function:
 
 ```javascript
 const perform = sidefx.perform;
-const context = {
-  console: console
-};
 const logMessage_2 = LogMessage("Hello, dispatcher!");
-perform(context, dispatcher, logMessage_2);
+perform(dispatcher, logMessage_2);
 // => "Hello, dispatcher!"
 ```
 
@@ -103,11 +98,11 @@ function* app() {
   yield LogMessage("Hello, App!");
 }
 
-perform(context, app());
+perform(app());
 // => "Hello, App!"
 ```
 
-Notice that `app` can be defined within its own module and only depends on `LogMessage` which is a stateless type factory. Instantiating the dispatcher and calling `.perform()` stays in the entry point (i.e. `index.js`).
+Notice that `app` can be defined within its own module and only depends on `LogMessage` which is a stateless type factory. Instantiating the dispatcher and calling `perform()` stays in the entry point (i.e. `index.js`). `app` itself is a pure function.
 
 Congratulations! We wrote our first side-effect free app!
 
@@ -123,7 +118,7 @@ In this example we want to be able to read a file from disk and post its content
 ```javascript
 const Effect = require("sidefx").Effect;
 
-module.exports = Effect(function (filename, encoding) {
+module.exports = Effect("ReadFile", function (filename, encoding) {
   this.filename = filename;
   this.encoding = encoding || "utf8";
 });
@@ -133,7 +128,7 @@ module.exports = Effect(function (filename, encoding) {
 ```javascript
 const Effect = require("sidefx").Effect;
 
-module.exports = Effect(function (filename, content) {
+module.exports = Effect("PostFile", function (filename, content) {
   this.filename = filename;
   this.content = content;
 });
@@ -143,7 +138,7 @@ module.exports = Effect(function (filename, content) {
 ```javascript
 const Effect = require("sidefx").Effect;
 
-module.exports = Effect(function (message) {
+module.exports = Effect("LogMessage", function (message) {
   this.message = message;  
 });
 ```
@@ -154,8 +149,10 @@ Nothing new here. Moving on.
 
 `performers/read_file.js`
 ```javascript
-module.exports = function performReadFile(context, readFile, callback) {
-  context.fs.readFile(readFile.filename, readFile.encoding, callback);
+const fs = require("fs");
+
+module.exports = function performReadFile(readFile, callback) {
+  fs.readFile(readFile.filename, readFile.encoding, callback);
 };
 ```
 
@@ -163,8 +160,10 @@ What's going on here? This performer is asynchronous and needs to call back with
 
 `performers/post_file.js`
 ```javascript
-module.exports = function performPostFile(context, postFile) {
-  return context.fetch("http://example.com/api/file", {
+const fetch = require("node-fetch");
+
+module.exports = function performPostFile(postFile) {
+  return fetch("http://example.com/api/file", {
     method: "post",
     headers: {
       "Accept": "application/json",
@@ -180,12 +179,10 @@ module.exports = function performPostFile(context, postFile) {
 
 In this case we use `fetch` which returns a promise. Instead of requesting the callback in the performer's parameters we simply return the promise. Notice that you must not have the `callback` parameter when you want to use a promise. SideFX uses the function's signature to determine whether it should use a callback or not.
 
-Notice that we access `fetch` via the `context` object. This enables us to use [`node-fetch`](https://www.npmjs.com/package/node-fetch) on the server and [`window.fetch`](https://developer.mozilla.org/en-US/docs/Web/API/GlobalFetch/fetch) in the browser without changing this performer.
-
 `performers/log_message.js`
 ```javascript
-module.exports = function performLogMessage(context, logMessage) {
-  context.console.log(logMessage.message);
+module.exports = function performLogMessage(logMessage) {
+  console.log(logMessage.message);
 };
 ```
 
@@ -225,19 +222,13 @@ const performReadFile = require("./performers/read_file.js");
 const performPostFile = require("./performers/post_file.js");
 const performLogMessage = require("./performers/log_message.js");
 
-const context = {
-  fs: require("fs"),
-  fetch: require("node-fetch"),
-  console: console
-};
-
 const dispatcher = TypeDispatcher([
   [ReadFile, performReadFile],
   [PostFile, performPostFile],
   [LogMessage, performLogMessage]
 ]);
 
-perform(context, dispatcher, app());
+perform(dispatcher, app());
 ```
 
 And there you have it. Our entry point `index.js` is only responsible for wiring things up and our application logic has no dependencies to any side-effect code.
