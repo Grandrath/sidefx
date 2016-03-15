@@ -5,7 +5,7 @@ const isPromise = value => value && isFunction(value.then) && isFunction(value.c
 const isIterator = value => value && isFunction(value.next);
 const isDone = request => request && request.done;
 const isFunction = value => typeof value === "function";
-const expectsCallback = performer => performer.length >= 3;
+const expectsCallback = performer => performer.length >= 2;
 
 function partial(f, ...initialArgs) {
   return (...additionalArgs) => f(...initialArgs, ...additionalArgs);
@@ -17,7 +17,7 @@ function handle(onSuccess, onError) {
     : onSuccess(result);
 }
 
-export default function perform(context, dispatcher, effect) {
+export default function perform(dispatcher, effect) {
   function resolveValue(value, callback) {
     switch (true) {
     case isIterator(value):
@@ -64,13 +64,13 @@ export default function perform(context, dispatcher, effect) {
     }
 
     if (expectsCallback(performer)) {
-      performer(context, effectInstance, handle(
+      performer(effectInstance, handle(
         result => resolveValue(result, callback),
         error => callback(error)
       ));
     }
     else {
-      const result = performer(context, effectInstance);
+      const result = performer(effectInstance);
       resolveValue(result, callback);
     }
   }

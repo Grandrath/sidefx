@@ -4,20 +4,10 @@ import Effect from "./effect.js";
 import TypeDispatcher from "./type_dispatcher.js";
 
 describe("perform", function () {
-  const context = {
-    myContextProp: true
-  };
-
   const MyType = Effect("MyType", function (value) {
     this.value = value;
     this.myEffectProp = true;
   });
-
-  function checkContext(ctx) {
-    if (!ctx || !ctx.myContextProp) {
-      throw new Error("perform did not pass context object to performer");
-    }
-  }
 
   function checkEffect(effect) {
     if (!effect || !effect.myEffectProp) {
@@ -26,14 +16,13 @@ describe("perform", function () {
   }
 
   describe("synchronous performer", function () {
-    function checkSyncPerformer(ctx, effect) {
-      checkContext(ctx);
+    function checkSyncPerformer(effect) {
       checkEffect(effect);
 
       return "expected result";
     }
 
-    function checkFailingSyncPerformer(ctx, effect) { // eslint-disable-line no-unused-vars
+    function checkFailingSyncPerformer(effect) { // eslint-disable-line no-unused-vars
       throw new Error("expected error");
     }
 
@@ -43,7 +32,7 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.eventually.equal("expected result");
     });
 
@@ -53,24 +42,23 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.be.rejectedWith("expected error");
     });
   });
 
   describe("asynchronous performer with callback", function () {
-    function checkCallbackPerformer(ctx, effect, callback) {
-      checkContext(ctx);
+    function checkCallbackPerformer(effect, callback) {
       checkEffect(effect);
 
       setTimeout(() => callback(null, "expected result"), 0);
     }
 
-    function checkFailingCallbackPerformer(ctx, effect, callback) {
+    function checkFailingCallbackPerformer(effect, callback) {
       setTimeout(() => callback(new Error("expected error")), 0);
     }
 
-    function checkThrowingCallbackPerformer(ctx, effect, callback) { // eslint-disable-line no-unused-vars
+    function checkThrowingCallbackPerformer(effect, callback) { // eslint-disable-line no-unused-vars
       throw new Error("expected error");
     }
 
@@ -80,7 +68,7 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.eventually.equal("expected result");
     });
 
@@ -90,7 +78,7 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.be.rejectedWith("expected error");
     });
 
@@ -100,20 +88,19 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.be.rejectedWith("expected error");
     });
   });
 
   describe("asynchronous performer returning a promise", function () {
-    function checkPromisePerformer(ctx, effect) {
-      checkContext(ctx);
+    function checkPromisePerformer(effect) {
       checkEffect(effect);
 
       return Promise.resolve("expected result");
     }
 
-    function checkFailingPromisePerformer(ctx, effect) { // eslint-disable-line no-unused-vars
+    function checkFailingPromisePerformer(effect) { // eslint-disable-line no-unused-vars
       return Promise.reject(new Error("expected error"));
     }
 
@@ -123,7 +110,7 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.eventually.equal("expected result");
     });
 
@@ -133,7 +120,7 @@ describe("perform", function () {
       ]);
       const effect = MyType();
 
-      return expect(perform(context, dispatcher, effect))
+      return expect(perform(dispatcher, effect))
         .to.be.rejectedWith("expected error");
     });
   });
@@ -156,18 +143,18 @@ describe("perform", function () {
       ]);
       const outerEffect = MyType();
 
-      return expect(perform({}, dispatcher, outerEffect))
+      return expect(perform(dispatcher, outerEffect))
         .to.eventually.equal("expected result");
     });
 
     it("should perform the returned effect (callback performer)", function () {
       const InnerType = Effect("InnerType");
 
-      function performMyType(ctx, effect, callback) {
+      function performMyType(effect, callback) {
         setTimeout(() => callback(null, InnerType()), 0);
       }
 
-      function performInnerType(ctx, effect, callback) {
+      function performInnerType(effect, callback) {
         setTimeout(() => callback(null, "expected result"), 0);
       }
 
@@ -177,7 +164,7 @@ describe("perform", function () {
       ]);
       const outerEffect = MyType();
 
-      return expect(perform({}, dispatcher, outerEffect))
+      return expect(perform(dispatcher, outerEffect))
         .to.eventually.equal("expected result");
     });
   });
@@ -191,7 +178,7 @@ describe("perform", function () {
         return `${first} ${second}`;
       };
 
-      function performMyType(ctx, myType) {
+      function performMyType(myType) {
         return myType.value;
       }
 
@@ -199,7 +186,7 @@ describe("perform", function () {
         [MyType, performMyType]
       ]);
 
-      return expect(perform({}, dispatcher, generator()))
+      return expect(perform(dispatcher, generator()))
         .to.eventually.equal("expected result");
     });
 
@@ -217,7 +204,7 @@ describe("perform", function () {
         this.message = message;
       });
 
-      function performThrowingType(ctx, throwingType) {
+      function performThrowingType(throwingType) {
         throw new Error(throwingType.message);
       }
 
@@ -225,7 +212,7 @@ describe("perform", function () {
         [ThrowingType, performThrowingType]
       ]);
 
-      return expect(perform({}, dispatcher, generator()))
+      return expect(perform(dispatcher, generator()))
         .to.eventually.equal("expected result");
     });
   });
@@ -234,12 +221,12 @@ describe("perform", function () {
     it("should be iterated over recursively", function () {
       const InnerType = Effect("InnerType");
 
-      function* performMyType(ctx, myType) { // eslint-disable-line no-unused-vars
+      function* performMyType(myType) { // eslint-disable-line no-unused-vars
         const result = yield InnerType();
         return result;
       }
 
-      function performInnerType(ctx, innerType) { // eslint-disable-line no-unused-vars
+      function performInnerType(innerType) { // eslint-disable-line no-unused-vars
         return "expected result";
       }
 
@@ -253,13 +240,17 @@ describe("perform", function () {
         [InnerType, performInnerType]
       ]);
 
-      return expect(perform({}, dispatcher, generator()))
+      return expect(perform(dispatcher, generator()))
         .to.eventually.equal("expected result");
     });
   });
 
   describe("overall test", function () {
     it("should pass", function () {
+      function doAsync(f) {
+        setTimeout(f, 0);
+      }
+
       const AsyncType = Effect("AsyncType", function (value) {
         this.value = value;
       });
@@ -268,17 +259,13 @@ describe("perform", function () {
         this.message = message;
       });
 
-      function performAsyncType(ctx, asyncType, callback) {
-        ctx.doAsync(() => callback(null, asyncType.value));
+      function performAsyncType(asyncType, callback) {
+        doAsync(() => callback(null, asyncType.value));
       }
 
-      function performThrowingType(ctx, throwingType) {
+      function performThrowingType(throwingType) {
         return Promise.reject(new Error(throwingType.message));
       }
-
-      const _context = {
-        doAsync: (f) => setTimeout(f, 0)
-      };
 
       const dispatcher = TypeDispatcher([
         [AsyncType, performAsyncType],
@@ -295,7 +282,7 @@ describe("perform", function () {
         }
       };
 
-      return expect(perform(_context, dispatcher, generator()))
+      return expect(perform(dispatcher, generator()))
         .to.eventually.equal("expected result");
     });
   });
@@ -304,7 +291,7 @@ describe("perform", function () {
     const dispatcher = TypeDispatcher();
     const effect = MyType();
 
-    return expect(perform({}, dispatcher, effect))
+    return expect(perform(dispatcher, effect))
       .to.be.rejectedWith("No performer for \"MyType\" could be found");
   });
 });
