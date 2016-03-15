@@ -1,7 +1,5 @@
 # SideFX
 
-**Note:** There is no code here yet, sorry. Just a concept.
-
 ## Introduction
 
 Side-effects are the primary source of complexity in our programs. They are (almost) the only reason for having to deal with asynchronous code. And they make our code hard to test. Separating side-effects from application logic is a primary goal of software architecture.
@@ -16,6 +14,12 @@ A while ago I watched [a talk](https://www.youtube.com/watch?v=D37dc9EoFus) abou
 * Make your code easier to test.
 * Make it easy to swap out implementations in different environments (development, tests, server, browser, &hellip;)
 * Reduce dependencies to `sidefx` to a minimum.
+
+## Install
+
+```
+npm install -S sidefx
+```
 
 ## Getting started with SideFX
 
@@ -213,7 +217,9 @@ Here we have the pure application logic - without performing any side-effects it
 
 `index.js`
 ```javascript
-const TypeDispatcher = require("sidefx").TypeDispatcher;
+const sidefx = require("sidefx");
+const TypeDispatcher = sidefx.TypeDispatcher;
+const perform = sidefx.perform;
 
 const app = require("./app.js");
 const ReadFile = require("./effects/read_file.js");
@@ -235,7 +241,7 @@ And there you have it. Our entry point `index.js` is only responsible for wiring
 
 ## What's next?
 
-As stated above there is no code to play around with yet, sorry. If you like to get notified when this unsatisfying situation changes, simply subscribe to [this issue on GitHub](https://github.com/Grandrath/sidefx/issues/1). I also welcome any ideas, suggestions and other input. Please feel free to open up a new GitHub issue.
+I'm working on a more elaborate documentation and examples. Stay tuned.
 
 ## Credits
 
