@@ -272,17 +272,21 @@ describe("perform", function () {
         [ThrowingType, performThrowingType]
       ]);
 
-      const generator = function* generator() {
+      const innerGenerator = function* innerGenerator() {
+        yield ThrowingType("result");
+      };
+
+      const outerGenerator = function* outerGenerator() {
         const first = yield AsyncType("expected");
         try {
-          yield ThrowingType("result");
+          yield innerGenerator();
         }
         catch (error) {
           return `${first} ${error.message}`;
         }
       };
 
-      return expect(perform(dispatcher, generator()))
+      return expect(perform(dispatcher, outerGenerator()))
         .to.eventually.equal("expected result");
     });
   });

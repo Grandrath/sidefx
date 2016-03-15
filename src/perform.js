@@ -45,9 +45,15 @@ export default function perform(dispatcher, effect) {
   }
 
   function iterate(iter, callback, error, result) {
-    const request = error
-      ? iter.throw(error)
-      : iter.next(result);
+    let request;
+    try {
+      request = error
+        ? iter.throw(error)
+        : iter.next(result);
+    }
+    catch (err) {
+      callback(err);
+    }
 
     const cb = isDone(request)
       ? callback
