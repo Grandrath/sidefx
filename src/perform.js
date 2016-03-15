@@ -1,6 +1,6 @@
 import Effect from "./effect.js";
 
-const {isEffect, getType} = Effect;
+const {isEffect} = Effect;
 const isPromise = value => value && isFunction(value.then) && isFunction(value.catch);
 const isIterator = value => value && isFunction(value.next);
 const isDone = request => request && request.done;
@@ -65,8 +65,7 @@ export default function perform(dispatcher, effect) {
   function performEffect(effectInstance, callback) {
     const performer = dispatcher.getPerformer(effectInstance);
     if (!isFunction(performer)) {
-      const type = getType(effectInstance);
-      throw new Error(`No performer for "${type.name}" could be found`);
+      throw new Error(`No performer for ${effectInstance} could be found`);
     }
 
     if (expectsCallback(performer)) {

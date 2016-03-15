@@ -296,6 +296,6 @@ describe("perform", function () {
     const effect = MyType();
 
     return expect(perform(dispatcher, effect))
-      .to.be.rejectedWith("No performer for \"MyType\" could be found");
+      .to.be.rejectedWith("No performer for [object MyType] could be found");
   });
 });
