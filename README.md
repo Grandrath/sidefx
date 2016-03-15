@@ -102,7 +102,7 @@ function* app() {
   yield LogMessage("Hello, App!");
 }
 
-perform(app());
+perform(dispatcher, app());
 // => "Hello, App!"
 ```
 
