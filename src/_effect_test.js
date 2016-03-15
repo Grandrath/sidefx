@@ -9,9 +9,23 @@ describe("Effect", function () {
     expect(myEffect).to.have.property("name", "Fred");
   });
 
-  it("should accept an optional name argument", function () {
-    const MyEffect = Effect("MyName");
-    expect(MyEffect).to.have.property("name", "MyName");
+  describe("name", function () {
+    it("should accept an optional name argument", function () {
+      const MyEffect = Effect("MyName");
+      expect(MyEffect).to.have.property("name", "MyName");
+    });
+
+    it("should convert effect instances to a meaningful string", function () {
+      const MyEffect = Effect("MyName");
+      const myEffect = MyEffect();
+      expect(String(myEffect)).to.equal("[object MyName]");
+    });
+
+    it("should convert effect instances to a meaningful string when no name is given", function () {
+      const MyEffect = Effect();
+      const myEffect = MyEffect();
+      expect(String(myEffect)).to.equal("[object Effect]");
+    });
   });
 
   describe("isEffect", function () {

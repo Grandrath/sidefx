@@ -6,11 +6,13 @@ export default function Effect(name, initialize) {
     initialize = name;
     name = undefined;
   }
+  name = name || "Effect";
   initialize = initialize || defaultInitialize;
 
   const factory = function effectFactory() {
     const instance = Object.create({
-      [EffectType]: factory
+      [EffectType]: factory,
+      [Symbol.toStringTag]: name
     });
     initialize.apply(instance, arguments);
 
