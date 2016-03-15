@@ -1,6 +1,6 @@
 {
   "name": "sidefx",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Sane side-effects",
   "main": "lib/index.js",
   "scripts": {
